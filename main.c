@@ -1,127 +1,205 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
- 
-int Particao(int array[], int esq, int dir, int recur[], int flag, int min[]){
-    int pivo = array[dir];
-    int i = esq - 1;
-    for (int j = esq; j < dir; j++) {
-        if (array[j] < pivo) {
-            i++;
-            int temp = array[i];
-            array[i] = array[j];
-            array[j] = temp;
-        }
-    }
-    int temp = array[i + 1];
-    array[i + 1] = array[dir];
-    array[dir] = temp;
 
-    return i + 1;
+typedef struct Arvore{
+    char cor;
+    int valor;
+    struct Arvore *esq;
+    struct Arvore *dir; 
+}Arvore;
+
+Arvore *InstArv(int v){
+    Arvore *novaArv = (Arvore*)malloc(sizeof(Arvore));
+    novaArv->valor = v;
+    novaArv->cor = 'r';
+    novaArv->dir = NULL;
+    novaArv->esq = NULL;
+    return novaArv;
 }
 
-int Mediana(int array[], int esq, int dir){
-    int meio = (esq + dir)/2, aux;
-    if(array[esq] > array[meio]){
-        aux = array[esq];
-        array[esq] = array[meio];
-        array[meio] = aux;
-    }
-    if(array[meio] > array[dir]){
-        aux = array[dir];
-        array[dir] = array[meio];
-        array[meio] = aux;        
-    }
-    if(array[esq] > array[meio]){
-        aux = array[esq];
-        array[esq] = array[meio];
-        array[meio] = aux;
-    }
-    return meio;    
-}
-
-int ParticaoMediana(int array[], int esq, int dir, int recur[], int flag, int min[]){
-    int meio = Mediana(array, esq, dir); // indice do meio
-    //printf("  mediana = %d", meio);
-    int i = esq - 1, aux, pivo;
-    aux = array[meio];
-    array[meio] = array[dir - 1];
-    array[dir - 1] = aux;
-    pivo = dir - 1;
-    for (int j = esq; j < dir-1; j++) {
-        if (array[j] < array[pivo]) {
-            i++;
-            int temp = array[i];
-            array[i] = array[j];
-            array[j] = temp;
-        }
-    }
-    int temp = array[i + 1];
-    array[i + 1] = array[dir - 1];
-    array[dir - 1] = temp;
-   
-    
-    return i + 1;
-}
-
-int QuickSortMediana(int array[], int esq, int dir, int recur[], int *flag, int min[]){
-    int minesq, mindir;
-    if(esq >= dir){
-        (*flag) += 1;
+int AlturaAvr(Arvore *arv){
+    if(arv == NULL){
         return 0;
     }
-    int pivo = ParticaoMediana(array, esq, dir, recur, *flag, min);
-    minesq = QuickSortMediana(array, esq, pivo - 1, recur, flag, min);
-    mindir = QuickSortMediana(array, pivo + 1, dir, recur, flag, min);
-    (*recur)++;
-    if(minesq > mindir){
-        return mindir +1;
+    int noD, noE;
+    noE = AlturaAvr(arv->esq) + 1;
+    noD = AlturaAvr(arv->dir) + 1;
+    if(noD > noE){
+        return noD;
     }
     else{
-        return minesq +1;
+        return noE;
+    }   
+}
+
+void RecolorirNo(Arvore *arv){
+    if(arv->cor == 'r'){
+        arv->cor = 'n';
     }
+    else{
+        arv->cor = 'r';
+    }
+    return;
+}
+
+Arvore *RotacaoEsq(Arvore *arv){ //rr
+    Arvore *aux = (Arvore*)malloc(sizeof(Arvore));
+    aux = arv->dir;
+    arv->dir = aux->esq;
+    aux->esq = arv;
+    return aux;
+}
+
+Arvore *RotacaoDir(Arvore *arv){ //ll
+    Arvore *aux = (Arvore*)malloc(sizeof(Arvore));
+    aux = arv->esq;
+    arv->esq = aux->dir;
+    aux->dir = arv;
+    return aux;
+}
+
+Arvore *RotacaoEsqDir(Arvore *arv){ //lr
+    Arvore *aux; 
+    arv->esq = RotacaoEsq(arv->esq); 
+    aux = RotacaoDir(arv); 
+    return aux;
+}
+
+Arvore *RotacaoDirEsq(Arvore *arv){ // rl
+    Arvore *aux; 
+    arv->dir = RotacaoEsq(arv->dir); 
+    aux = RotacaoEsq(arv); 
+    return aux;
+}
+
+void InsArv(Arvore **parv, Arvore *novaArv, Arvore *raiz, Arvore **pvo, Arvore **ppai){
+    Arvore *pai = NULL, *vo = NULL , *tio = NULL;
+    if(pvo != NULL){
+        vo = *pvo;
+    }
+    if(ppai != NULL){
+        pai = *ppai;
+    }
+    Arvore *arv = *parv;
+    Arvore **pesq = &arv->esq;
+    Arvore **pdir = &arv->dir;
+    if(arv->valor > novaArv->valor){
+        if(arv->esq == NULL){
+            arv->esq = novaArv;
+        }
+        else{
+            InsArv(pesq, novaArv, raiz, ppai, parv);
+        }
+    }
+    if(arv->valor < novaArv->valor){
+        if(arv->dir == NULL){
+            arv->dir = novaArv;
+        }
+        else{
+            
+            InsArv(pdir, novaArv, raiz, ppai, parv);
+        }
+    }
+    pvo = ppai;
+    ppai = parv;
+    if(pvo != NULL){
+        vo = *pvo;
+    }
+    if(ppai != NULL){
+        pai = *ppai;
+    }
+    if(vo != NULL){
+        if(vo->esq != pai){
+            tio=vo->esq;
+        }    
+        else{
+            tio=vo->dir;
+        } 
+    }       
+    // if(pai != NULL && vo != NULL){
+    //    printf("pai %c", pai->cor); 
+    //    printf("vo %c", vo->cor);
+    // }
+    if(vo != NULL){
+        if(tio == NULL || tio->cor == 'n'){
+            if(vo->dir == pai && pai->dir){
+                *pvo = RotacaoEsq(vo); //rr
+            }
+            else if(vo->esq == pai && pai->esq){
+                *pvo = RotacaoDir(vo); //ll
+            }
+            else if(vo->dir == pai && pai->esq){
+                *pvo = RotacaoDirEsq(vo); //rl
+            }
+            else if(vo->esq == pai && pai->dir){
+                *pvo = RotacaoEsqDir(vo); //lr
+            }
+        }
+    }
+    // if(tio != NULL && tio->cor == 'r'){
+    //         RecolorirNo(tio); 
+    //         RecolorirNo(pai);
+    //         RecolorirNo(vo);
+    // }
+    // if(raiz->cor == 'r'){
+    //     raiz->cor = 'n';
+    // } 
+
 }
 
 
-int QuickSort(int array[], int esq, int dir, int recur[], int *flag, int min[]){
-    int minesq, mindir;
-    if(esq >= dir){
-        (*flag) += 1;
-        return 0;
+Arvore *BuscArv(Arvore *arv, int busca){
+    Arvore *aux;
+    aux = NULL;
+    if(arv->valor == busca){
+        return arv;
     }
-    int pivo = Particao(array, esq, dir, recur, *flag, min);
-    minesq = QuickSort(array, esq, pivo - 1, recur, flag, min);
-    mindir = QuickSort(array, pivo + 1, dir, recur, flag, min);
-    (*recur)++;
-    if(minesq > mindir){
-        return mindir +1;
+    else if(arv->valor > busca){
+        aux = BuscArv(arv->esq, busca);
+    }
+    else if(arv->valor < busca){
+        aux = BuscArv(arv->dir, busca);
+    }
+    return aux;
+}
+
+void PrintArv(Arvore *arv){
+    if(arv == NULL){
+        return;
     }
     else{
-        return minesq +1;
-    }
+        PrintArv(arv->esq); 
+        printf("%c", arv->cor);
+        printf("%d", arv->valor);
+        printf(" ");
+        PrintArv(arv->dir);
+    }    
 }
 
 int main (void){
-    int *array, *array2, tam, i, *recur, *recur2, *min, flag = 0;
-    scanf("%d", &tam);
-    array = (int*)malloc(tam * sizeof(int));
-    array2 = (int*)malloc(tam * sizeof(int));
-    recur = (int*)malloc(sizeof(int));
-    recur2 = (int*)malloc(sizeof(int));
-    min = (int*)malloc(sizeof(int));
-    for(i=0; i<tam; i++){
-        scanf("%d", &array[i]);
-        array2[i] = array[i];
+    Arvore *arv;
+    int valor, altura;
+    arv = NULL;
+    scanf("%d", &valor);
+    while(valor > 0){
+        if(arv == NULL){
+            arv = InstArv(valor);
+        }
+        else{
+            Arvore *novaArv;
+            scanf("%d", &valor);
+            if(valor < 0){
+                break;
+            }
+            else{
+                novaArv = InstArv(valor); 
+                InsArv(&arv, novaArv, arv, NULL, NULL);
+            }
+        }
     }
-    *min = QuickSort(array, 0, tam - 1, recur, &flag, min);
-    printf("%d\n", *recur - *min);
-    // printf("min = %d\n", *min); 
-    // printf("reur = %d\n", *recur);  
-    *recur2 = 0;
-    flag = 0;
-    *min = 0; 
-    *min = QuickSortMediana(array2, 0, tam - 1, recur2, &flag, min);
-    printf("%d\n", *recur2 - *min);  
-    printf("flag: %d", flag);
-    return 0;
+    PrintArv(arv);
+    printf("\nraiz: %d", arv->valor);
+    altura = AlturaAvr(arv);
+    //printf("%d", altura - 1);
 }
